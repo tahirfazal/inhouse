@@ -11,169 +11,196 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <style>
 :root{
-  --bg:#14171c; --panel:#1c2027; --panel2:#20252d; --line:#2b313a; --line2:#39424e;
-  --ink:#dfe4ec; --muted:#8b95a5; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --bg:#E7E1D4; --panel:#F2EDE3; --panel2:#EAE4D7; --line:#D9D1BF; --line2:#C6BCA6;
+  --ink:#262320; --muted:#7C7466; --faint:#9A9182; --field:#FCF9F2;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --ease:cubic-bezier(.2,.6,.3,1);
 }
-.redline-theme{ --accent:#f0a92e; --accent-dim:#7a5716; --workspace:#2a2f38; }
-.dxf-theme{ --accent:#57b8ff; --accent-dim:#2c5878; --workspace:#0f1216; }
+.redline-theme{ --accent:#A8462A; --accent-dim:#F0DFD8; --workspace:#DED7C7; }
+.dxf-theme{ --accent:#2F6280; --accent-dim:#DAE4EC; --workspace:#DED7C7; }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
 body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:13px;overflow:hidden;-webkit-font-smoothing:antialiased}
 button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
-button{cursor:pointer}
+button{cursor:pointer;transition:background .12s var(--ease),border-color .12s var(--ease),color .12s var(--ease),transform .06s var(--ease)}
+button:active:not(:disabled){transform:translateY(1px)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 #root{height:100%}
 ::-webkit-scrollbar{width:11px;height:11px}
 ::-webkit-scrollbar-track{background:var(--bg)}
-::-webkit-scrollbar-thumb{background:#3b434f;border-radius:6px;border:3px solid var(--bg)}
+::-webkit-scrollbar-thumb{background:#C6BCA6;border-radius:6px;border:3px solid var(--bg)}
+::-webkit-scrollbar-thumb:hover{background:#B0A48B}
 
 /* ---- shell / mode switcher ---- */
 .shell{height:100%;display:grid;grid-template-rows:34px 1fr}
-.modebar{grid-row:1;display:flex;align-items:center;gap:0;background:#0d1013;border-bottom:1px solid var(--line);padding:0 8px}
-.modebrand{font-weight:700;letter-spacing:.22em;font-size:11px;text-transform:uppercase;color:#6c7787;padding-right:12px;margin-right:8px;border-right:1px solid var(--line)}
-.modebtn{height:24px;padding:0 14px;border-radius:5px;border:1px solid transparent;background:transparent;color:var(--muted);font-size:11px;letter-spacing:.04em;display:inline-flex;align-items:center;gap:7px;margin-right:4px}
-.modebtn:hover{background:#1a1e24;color:var(--ink)}
-.modebtn .dot{width:7px;height:7px;border-radius:50%;background:#4b5665}
-.modebtn.on.pdf{background:#2c2415;border-color:#7a5716;color:#f0a92e}
-.modebtn.on.pdf .dot{background:#f0a92e}
-.modebtn.on.dxf{background:#1a3548;border-color:#2c5878;color:#57b8ff}
-.modebtn.on.dxf .dot{background:#57b8ff}
+.modebar{grid-row:1;display:flex;align-items:center;gap:0;background:var(--panel);border-bottom:1px solid var(--line);padding:0 8px}
+.modebrand{font-weight:600;letter-spacing:.24em;font-size:11px;text-transform:uppercase;color:var(--ink);padding-right:10px;margin-right:8px;border-right:1px solid var(--line)}
+.vertag{font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:#8A6F52;background:#EFE7D6;border:1px solid #DCCFB6;
+  border-radius:20px;padding:1px 8px;margin-right:12px}
+.modebtn{height:24px;padding:0 14px;border-radius:20px;border:1px solid transparent;background:transparent;color:var(--muted);font-size:11px;letter-spacing:.04em;display:inline-flex;align-items:center;gap:7px;margin-right:4px}
+.modebtn:hover{background:var(--panel2);color:var(--ink)}
+.modebtn .dot{width:6px;height:6px;border-radius:50%;background:#BEB4A2}
+.modebtn.on.pdf{background:#F0DFD8;border-color:#D6B4A6;color:#8E3B22}
+.modebtn.on.pdf .dot{background:#A8462A}
+.modebtn.on.dxf{background:#DAE4EC;border-color:#AEC4D3;color:#2A5670}
+.modebtn.on.dxf .dot{background:#2F6280}
 .modebody{grid-row:2;position:relative;overflow:hidden;display:none}
 .modebody.active{display:block}
 .modefill{position:absolute;inset:0}
 
-.app{display:grid;grid-template-rows:44px 1fr 26px;grid-template-columns:64px 1fr 268px;height:100%}
+.app{display:grid;grid-template-rows:44px 1fr 26px;grid-template-columns:66px 1fr 272px;height:100%}
 .top{grid-column:1/4;display:flex;align-items:center;gap:6px;padding:0 10px;background:var(--panel);border-bottom:1px solid var(--line)}
 .rail{grid-row:2;background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;padding:6px 0}
 .viewer{grid-row:2;background:var(--workspace);overflow:auto;position:relative}
 .side{grid-row:2;background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden}
 .status{grid-column:1/4;background:var(--panel);border-top:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:0 12px;font-family:var(--mono);font-size:11px;color:var(--muted)}
 
-.brand{font-weight:700;letter-spacing:.2em;font-size:12px;text-transform:uppercase;padding-right:10px;margin-right:4px;border-right:1px solid var(--line);color:var(--ink)}
+.brand{font-weight:600;letter-spacing:.2em;font-size:12px;text-transform:uppercase;padding-right:10px;margin-right:4px;border-right:1px solid var(--line);color:var(--ink)}
 .brand span{color:var(--accent)}
-.tb{background:var(--panel2);border:1px solid var(--line2);color:var(--ink);height:28px;padding:0 10px;border-radius:4px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
-.tb:hover{background:#2a303a;border-color:#4b5665}
-.tb.primary{background:var(--accent-dim);border-color:var(--accent);color:var(--ink)}
-.tb.primary:hover{filter:brightness(1.15)}
-.tb:disabled{opacity:.4;cursor:default}
+.tb{position:relative;background:var(--field);border:1px solid var(--line2);color:var(--ink);height:28px;padding:0 10px;border-radius:5px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.tb:hover:not(:disabled){background:#fff;border-color:var(--accent);color:var(--accent)}
+.tb.primary{background:var(--accent);border-color:var(--accent);color:#FCF9F2}
+.tb.primary:hover:not(:disabled){filter:brightness(1.1);color:#fff}
+.tb:disabled{opacity:.38;cursor:default}
 .tb.icon{padding:0;width:28px;justify-content:center}
 .sep{width:1px;height:22px;background:var(--line);margin:0 4px}
 .mono{font-family:var(--mono);font-size:11px;color:var(--muted)}
-#pageInput{width:38px;height:24px;background:#171b21;border:1px solid var(--line2);border-radius:3px;text-align:center;font-family:var(--mono)}
+.numin{width:46px;height:24px;background:var(--field);border:1px solid var(--line2);border-radius:4px;text-align:center;font-family:var(--mono);color:var(--ink)}
+
+/* Alt-held shortcut badges */
+.kbadge{position:absolute;top:-7px;right:-6px;background:var(--ink);color:#F7F2E8;font-family:var(--mono);
+  font-size:9px;line-height:1;padding:2px 4px;border-radius:3px;pointer-events:none;z-index:5;letter-spacing:.02em;
+  box-shadow:0 1px 3px #0003}
+.altnote{position:fixed;left:50%;top:44px;transform:translateX(-50%);z-index:65;background:var(--ink);color:#F7F2E8;
+  font-size:11px;padding:5px 14px;border-radius:20px;pointer-events:none;box-shadow:0 4px 16px #0003}
 
 .tgroup{padding:4px 0;border-bottom:1px solid var(--line)}
 .tgroup:last-child{border-bottom:0}
-.glab{font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:#5f6a79;text-align:center;padding:4px 0 2px}
-.tool{width:52px;height:46px;margin:2px auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:transparent;border:1px solid transparent;border-radius:5px;color:var(--muted)}
+.glab{font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);text-align:center;padding:4px 0 2px}
+.tool{position:relative;width:54px;height:46px;margin:2px auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:transparent;border:1px solid transparent;border-radius:6px;color:var(--muted)}
 .tool svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .tool span{font-size:8.5px;letter-spacing:.03em}
-.tool:hover{background:#242a33;color:var(--ink)}
-.tool.on{background:color-mix(in srgb, var(--accent) 18%, transparent);border-color:var(--accent-dim);color:var(--accent)}
+.tool:hover{background:var(--panel2);border-color:var(--line);color:var(--ink)}
+.tool.on{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+.tool.armed{border-color:var(--accent);border-style:dashed;color:var(--accent)}
 
 .tabs{display:flex;border-bottom:1px solid var(--line);flex:0 0 auto}
 .tab{flex:1;height:34px;background:transparent;border:0;border-bottom:2px solid transparent;color:var(--muted);font-size:10px;letter-spacing:.13em;text-transform:uppercase}
-.tab.on{color:var(--accent);border-bottom-color:var(--accent);background:#1f242c}
+.tab:hover{color:var(--ink);background:var(--panel2)}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent);background:var(--field)}
 .pane{flex:1;overflow-y:auto}
 .sec{padding:10px 12px;border-bottom:1px solid var(--line)}
-.sec h4{margin:0 0 8px;font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:#6c7787;font-weight:600}
+.sec h4{margin:0 0 8px;font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--faint);font-weight:600}
 .row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
 .row:last-child{margin-bottom:0}
 .row label{width:70px;flex:0 0 auto;color:var(--muted);font-size:11px}
 .row input[type=range]{flex:1;accent-color:var(--accent);min-width:0}
-.row input[type=color]{width:30px;height:24px;padding:0;background:none;border:1px solid var(--line2);border-radius:3px}
-.row input[type=number],.row input[type=text],.row select{flex:1;min-width:0;height:24px;background:#101318;border:1px solid var(--line2);border-radius:3px;padding:0 6px}
-.row textarea{flex:1;min-height:56px;background:#101318;border:1px solid var(--line2);border-radius:3px;padding:5px 6px;resize:vertical;font-size:12px;line-height:1.45}
+.row input[type=color]{width:30px;height:24px;padding:0;background:none;border:1px solid var(--line2);border-radius:4px;cursor:pointer}
+.row input[type=number],.row input[type=text],.row select{flex:1;min-width:0;height:24px;background:var(--field);border:1px solid var(--line2);border-radius:4px;padding:0 6px}
+.row input:focus,.row select:focus,.row textarea:focus{border-color:var(--accent);outline:none}
+.row textarea{flex:1;min-height:56px;background:var(--field);border:1px solid var(--line2);border-radius:4px;padding:5px 6px;resize:vertical;font-size:12px;line-height:1.45}
 .val{font-family:var(--mono);font-size:11px;color:var(--muted);width:36px;text-align:right;flex:0 0 auto}
-.chk{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:11px}
-.chk input{accent-color:var(--accent)}
+.chk{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:11px;cursor:pointer}
+.chk input{accent-color:var(--accent);cursor:pointer}
 .swatches{display:flex;gap:5px;flex-wrap:wrap}
-.sw{width:19px;height:19px;border-radius:3px;border:1px solid #0008;padding:0}
+.sw{width:19px;height:19px;border-radius:4px;border:1px solid #00000026;padding:0}
 .sw:hover{outline:2px solid var(--accent);outline-offset:1px}
-.hint{color:#616c7b;font-size:10.5px;line-height:1.55}
-.empty{padding:22px 14px;color:#5f6a79;font-size:11.5px;line-height:1.6;text-align:center}
+.hint{color:var(--muted);font-size:10.5px;line-height:1.55}
+.empty{padding:22px 14px;color:var(--faint);font-size:11.5px;line-height:1.6;text-align:center}
 .stat{font-family:var(--mono);font-size:11px;color:var(--ink);line-height:1.9}
 .stat b{color:var(--accent)}
 
-.mk{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;padding:7px 10px;border-bottom:1px solid #232830;cursor:pointer}
-.mk:hover{background:#232932}
-.mk.on{background:color-mix(in srgb, var(--accent) 18%, transparent)}
-.mkdot{width:11px;height:11px;border-radius:2px;border:1px solid #0009}
+/* segmented button group (text align / B I U S) */
+.seg{display:flex;gap:4px;flex:1;flex-wrap:wrap}
+.segb{flex:0 0 auto;min-width:28px;height:26px;padding:0 8px;border:1px solid var(--line2);background:var(--field);
+  color:var(--muted);border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:12px}
+.segb:hover{border-color:var(--accent);color:var(--accent);background:#fff}
+.segb.on{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+.segb svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round}
+
+.mk{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;padding:7px 10px;border-bottom:1px solid var(--line);cursor:pointer}
+.mk:hover{background:var(--panel2)}
+.mk.on{background:var(--accent-dim)}
+.mkdot{width:11px;height:11px;border-radius:3px;border:1px solid #00000026}
 .mkt{font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mks{font-size:10px;color:var(--muted);font-family:var(--mono)}
-.mkp{font-family:var(--mono);font-size:10px;color:#5f6a79}
+.mkp{font-family:var(--mono);font-size:10px;color:var(--faint)}
 
-.layerrow{display:grid;grid-template-columns:16px 20px 1fr 32px;gap:8px;align-items:center;padding:5px 12px;border-bottom:1px solid #232830;font-size:11.5px}
-.layerrow:hover{background:#20262f}
+.layerrow{display:grid;grid-template-columns:16px 20px 1fr 32px;gap:8px;align-items:center;padding:5px 12px;border-bottom:1px solid var(--line);font-size:11.5px}
+.layerrow:hover{background:var(--panel2)}
 .layerrow input[type=checkbox]{accent-color:var(--accent)}
-.swdot{width:19px;height:19px;border-radius:3px;border:1px solid #0007;cursor:pointer;padding:0}
+.swdot{width:19px;height:19px;border-radius:4px;border:1px solid #00000026;cursor:pointer;padding:0}
 .layername{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:default}
-.layername.dim{color:#5a6472}
-.layercount{font-family:var(--mono);font-size:10px;color:#5f6a79;text-align:right}
+.layername.dim{color:var(--faint)}
+.layercount{font-family:var(--mono);font-size:10px;color:var(--faint);text-align:right}
 .layertools{display:flex;gap:4px;padding:6px 12px}
 
-.shrow{display:grid;grid-template-columns:11px 1fr auto;gap:8px;align-items:center;padding:6px 10px;border-bottom:1px solid #232830;cursor:pointer}
-.shrow:hover{background:#20262f}
-.shrow.on{background:color-mix(in srgb, var(--accent) 18%, transparent)}
+.shrow{display:grid;grid-template-columns:11px 1fr auto;gap:8px;align-items:center;padding:6px 10px;border-bottom:1px solid var(--line);cursor:pointer}
+.shrow:hover{background:var(--panel2)}
+.shrow.on{background:var(--accent-dim)}
 .shname{font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .shlayer{font-size:10px;color:var(--muted);font-family:var(--mono)}
 
-.pagewrap{padding:14px 0 60px;display:flex;flex-direction:column;align-items:center;gap:12px;width:100%}
-.page{position:relative;background:#fff;box-shadow:0 2px 14px #0007,0 0 0 1px #0009;flex:0 0 auto}
+.pagewrap{padding:16px 0 60px;display:flex;flex-direction:column;align-items:center;gap:12px;width:100%}
+.page{position:relative;background:#fff;box-shadow:0 1px 3px #0000001f,0 8px 26px #00000014,0 0 0 1px #00000012;flex:0 0 auto}
 .page canvas{display:block;width:100%;height:100%}
 .page svg.ovl{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
 .calbadge{position:absolute;right:0;top:-16px;font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:.05em}
-.editbox{width:100%;height:100%;border:0;outline:1.5px solid var(--accent);background:rgba(255,255,255,.99);color:#111;
+.editbox{width:100%;height:100%;border:0;outline:1.5px solid var(--accent);background:transparent;color:#111;
   font-family:Helvetica,Arial,sans-serif;padding:0 1px;resize:none;line-height:1.15;overflow:hidden;
   white-space:pre;letter-spacing:0;box-sizing:border-box}
-.editbox::selection{background:rgba(47,178,232,.35)}
+.editbox.cover{background:#fff}
+.editbox::selection{background:rgba(168,70,42,.28)}
 
-.emptyv{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#8b95a5;text-align:center;padding:20px}
+.emptyv{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--muted);text-align:center;padding:20px}
 .emptyv .big{font-size:15px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink)}
 .emptyv .sub{font-size:12px;max-width:440px;line-height:1.7}
 .cvs{width:100%;height:100%;touch-action:none;display:block}
 .cursor-select{cursor:default}
 .cursor-draw{cursor:crosshair}
 .cursor-pan{cursor:grab}
+.cursor-bucket{cursor:cell}
+.cursor-text{cursor:text}
+.cursor-format{cursor:copy}
 
-.ctxmenu{position:fixed;z-index:70;min-width:206px;background:#141920;border:1px solid var(--line2);
-  border-radius:5px;padding:4px;box-shadow:0 12px 38px #000c;font-size:11.5px}
+.ctxmenu{position:fixed;z-index:70;min-width:212px;background:var(--field);border:1px solid var(--line2);
+  border-radius:7px;padding:4px;box-shadow:0 10px 34px #0000002e;font-size:11.5px}
 .ctxmenu button{display:flex;width:100%;align-items:center;justify-content:space-between;gap:20px;
-  background:none;border:0;color:var(--ink);text-align:left;padding:6px 9px;border-radius:3px;
+  background:none;border:0;color:var(--ink);text-align:left;padding:6px 9px;border-radius:4px;
   cursor:pointer;font-size:11.5px;font-family:inherit}
-.ctxmenu button:hover:not(:disabled){background:var(--accent-dim);color:var(--ink)}
-.ctxmenu button:disabled{color:#4d5663;cursor:default}
+.ctxmenu button:hover:not(:disabled){background:var(--accent-dim);color:var(--accent)}
+.ctxmenu button:disabled{color:#B7AE9C;cursor:default}
 .ctxmenu .k{font-family:var(--mono);font-size:10px;opacity:.55;white-space:nowrap}
 .ctxmenu .csep{height:1px;background:var(--line);margin:4px 2px}
-.ctxmenu .chead{padding:5px 9px 6px;color:var(--muted);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
-#modal{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:50}
-.card{background:var(--panel);border:1px solid var(--line2);border-radius:8px;padding:18px 20px;width:360px;box-shadow:0 18px 60px #000b}
+.ctxmenu .chead{padding:5px 9px 6px;color:var(--faint);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+#modal{position:fixed;inset:0;background:rgba(38,35,30,.38);display:flex;align-items:center;justify-content:center;z-index:50}
+.card{background:var(--panel);border:1px solid var(--line2);border-radius:10px;padding:18px 20px;width:360px;box-shadow:0 20px 60px #0000003d}
 .card h3{margin:0 0 4px;font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent)}
 .card p{margin:0 0 14px;color:var(--muted);font-size:11.5px;line-height:1.6}
 .card .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
-#toast{position:fixed;left:50%;bottom:44px;transform:translateX(-50%);background:#0d1013;border:1px solid var(--line2);border-radius:5px;padding:9px 16px;font-size:12px;opacity:0;transition:opacity .18s;pointer-events:none;z-index:60;box-shadow:0 8px 30px #000a}
+#toast{position:fixed;left:50%;bottom:44px;transform:translateX(-50%);background:var(--ink);color:#F7F2E8;border:0;border-radius:20px;padding:9px 18px;font-size:12px;opacity:0;transition:opacity .18s;pointer-events:none;z-index:60;box-shadow:0 6px 24px #0000003d}
 #toast.on{opacity:1}
 
 /* layers panel */
-.lyr{display:flex;align-items:center;gap:5px;padding:3px 4px;border:1px solid transparent;border-radius:4px;margin-bottom:2px}
-.lyr.on{border-color:var(--accent);background:#ffffff08}
-.lyrbtn{background:none;border:1px solid var(--line2);color:var(--muted);border-radius:3px;width:22px;height:22px;
+.lyr{display:flex;align-items:center;gap:5px;padding:3px 4px;border:1px solid transparent;border-radius:5px;margin-bottom:2px}
+.lyr.on{border-color:var(--accent);background:var(--accent-dim)}
+.lyrbtn{background:var(--field);border:1px solid var(--line2);color:var(--muted);border-radius:4px;width:22px;height:22px;
   font-size:11px;line-height:1;cursor:pointer;flex:0 0 auto;padding:0}
-.lyrbtn:hover:not(:disabled){color:var(--ink);border-color:var(--accent)}
+.lyrbtn:hover:not(:disabled){color:var(--accent);border-color:var(--accent)}
 .lyrbtn:disabled{opacity:.3;cursor:default}
-.lyrname{flex:1;min-width:0;background:#171b21;border:1px solid var(--line2);border-radius:3px;color:var(--ink);
+.lyrname{flex:1;min-width:0;background:var(--field);border:1px solid var(--line2);border-radius:4px;color:var(--ink);
   font-size:11.5px;padding:3px 6px;font-family:inherit}
 .lyrname:disabled{background:transparent;border-color:transparent;color:var(--muted)}
 .lyrn{font-family:var(--mono);font-size:10.5px;color:var(--muted);min-width:22px;text-align:right;cursor:pointer}
 
 /* symbol picker */
 .symgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
-.symbtn{display:flex;flex-direction:column;align-items:center;gap:3px;background:#171b21;border:1px solid var(--line2);
-  border-radius:4px;padding:6px 3px;cursor:pointer;color:var(--muted)}
-.symbtn:hover{color:var(--ink);border-color:var(--accent)}
-.symbtn.on{color:var(--accent);border-color:var(--accent);background:#ffffff08}
+.symbtn{display:flex;flex-direction:column;align-items:center;gap:3px;background:var(--field);border:1px solid var(--line2);
+  border-radius:5px;padding:6px 3px;cursor:pointer;color:var(--muted)}
+.symbtn:hover{color:var(--accent);border-color:var(--accent)}
+.symbtn.on{color:var(--accent);border-color:var(--accent);background:var(--accent-dim)}
 .symbtn svg{width:26px;height:26px;display:block}
 .symbtn span{font-size:8.5px;letter-spacing:.04em;text-align:center;line-height:1.2}
-.cursor-bucket{cursor:cell}
-.cursor-text{cursor:text}
 </style>
 </head>
 <body>
@@ -184,6 +211,27 @@ button{cursor:pointer}
 const {useState,useEffect,useRef} = React;
 
 /* shared, trivially-identical helpers used by the shell */
+const VERSION="v5";
+
+/* Only three font families survive a PDF round-trip without embedding a whole
+   typeface, so those are the three offered. Everything maps cleanly onto the
+   PDF standard-14 set, bold/italic included. */
+const FONTS=[
+  {k:"sans",  name:"Helvetica / Arial", css:"Helvetica, Arial, sans-serif"},
+  {k:"serif", name:"Times",             css:"'Times New Roman', Times, serif"},
+  {k:"mono",  name:"Courier",           css:"'Courier New', Courier, monospace"}
+];
+const FONTCSS={sans:FONTS[0].css, serif:FONTS[1].css, mono:FONTS[2].css};
+function fontCssOf(st){ return FONTCSS[(st&&st.font)||"sans"] || FONTCSS.sans; }
+/* Guess a family from whatever PDF.js reports, so retyped text keeps its look. */
+function guessFamily(name){
+  const n=String(name||"").toLowerCase();
+  if(/courier|mono|consol/.test(n)) return "mono";
+  if(/times|serif|georgia|garamond|book|roman|minion|cambria/.test(n) && !/sans/.test(n)) return "serif";
+  return "sans";
+}
+function guessBold(name){ return /bold|black|heavy|semib|demi/.test(String(name||"").toLowerCase()); }
+function guessItalic(name){ return /italic|oblique/.test(String(name||"").toLowerCase()); }
 function toastMsg(m){ const t=document.getElementById("toast"); t.textContent=m; t.classList.add("on");
   clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("on"),2200); }
 
@@ -374,21 +422,27 @@ const SCALE_PRESETS=[
 const LABEL={select:"Select",rect:"Box",ellipse:"Ellipse",polygon:"Polygon",cloud:"Cloud",line:"Line",arrow:"Arrow",
   polyline:"Polyline",ink:"Pen",text:"Text",callout:"Callout",highlight:"Highlight",calibrate:"Calibrate",
   mdist:"Length",marea:"Area",mangle:"Angle",
-  bucket:"Paint Bucket",stamp:"Stamp",symbol:"Symbol",ptext:"Edited Text",textedit:"Edit PDF Text",snapshot:"Snapshot"};
+  bucket:"Paint Bucket",stamp:"Stamp",symbol:"Symbol",ptext:"Edited Text",textedit:"Edit PDF Text",snapshot:"Snapshot",
+  format:"Format Painter"};
 /* Single-key tool shortcuts. Where a tool has a direct Bluebeam/Acrobat
    equivalent the familiar letter is used; the rest are mnemonic. No modifier
    keys, so they never collide with the Ctrl-combinations below. */
 const TOOLKEY={ v:"select", r:"rect", o:"ellipse", g:"polygon", c:"cloud",
   l:"line", a:"arrow", p:"polyline", n:"ink", t:"text", q:"callout",
   h:"highlight", m:"mdist", e:"marea", j:"mangle", i:"calibrate",
-  s:"stamp", y:"symbol", b:"bucket", x:"textedit", k:"snapshot" };
+  s:"stamp", y:"symbol", b:"bucket", x:"textedit", k:"snapshot", f:"format" };
 const KEYFOR=(function(){ const o={}; for(const k in TOOLKEY) o[TOOLKEY[k]]=k.toUpperCase(); return o; })();
 const SHORTCUTS=[
   ["Tools","V Select · R Box · O Ellipse · G Polygon · C Cloud"],
   ["","L Line · A Arrow · P Polyline · N Pen · H Highlight"],
   ["","T Text · Q Callout · S Stamp · Y Symbol · B Bucket"],
   ["","M Length · E Area · J Angle · I Calibrate · X Edit PDF text · K Snapshot"],
+  ["","F Format painter \u2014 click a markup to pick up its look, then click others to paint it on"],
   ["Edit","Ctrl+Z undo · Ctrl+Y redo · Ctrl+C/X/V copy, cut, paste"],
+  ["","Ctrl+Shift+C copy formatting · Ctrl+Shift+V paste formatting"],
+  ["","Ctrl+O open PDF · Ctrl+S save marked-up PDF"],
+  ["Discover","Hold Alt to flash every shortcut over the buttons"],
+  ["","Mouse wheel zooms at the pointer · Shift+wheel scrolls"],
   ["","Ctrl+D duplicate · Ctrl+A select all on page · Del delete"],
   ["Order","Ctrl+] forward · Ctrl+[ backward · add Shift for front/back"],
   ["View","Ctrl+0 fit 100% · Ctrl+= / Ctrl+\u2212 zoom · PgUp / PgDn page"],
@@ -405,7 +459,7 @@ const CAPS={
   mdist:{stroke:1,font:1,arrow:1}, marea:{stroke:1,fill:1,font:1}, mangle:{stroke:1,font:1}, calibrate:{stroke:1},
   bucket:{fill:1,bucket:1}, stamp:{stroke:1,fill:1,font:1,rot:1,stamp:1},
   symbol:{stroke:1,font:1,rot:1,symbol:1}, ptext:{stroke:1,fill:1,font:1},
-  textedit:{}, snapshot:{}
+  textedit:{}, snapshot:{}, format:{}
 };
 const ICON={
   select:'<path d="M4 3l7 16 2.2-6.4L20 10.2z"/>',
@@ -428,10 +482,11 @@ const ICON={
   stamp:'<path d="M9 3h6v4l-2 4h-2L9 7z"/><path d="M4 15h16v3H4z"/><path d="M3 21h18"/>',
   symbol:'<path d="M12 3l4 12-4-3-4 3z"/><path d="M12 17v4"/>',
   textedit:'<path d="M4 6h10M9 6v11M6 17h6"/><path d="M14 20l6-6 2 2-6 6h-2z"/>',
+  format:'<path d="M5 3h10v6H5z"/><path d="M10 9v4"/><path d="M7.5 13h5v8h-5z"/>',
   snapshot:'<path d="M3 8h4l2-3h6l2 3h4v12H3z"/><circle cx="12" cy="13" r="3.5"/>'
 };
 const TOOLS=[
-  {g:"Edit", items:["select","textedit"]},
+  {g:"Edit", items:["select","format","textedit"]},
   {g:"Shapes", items:["rect","ellipse","polygon","cloud"]},
   {g:"Lines", items:["line","arrow","polyline","ink"]},
   {g:"Fill", items:["bucket"]},
@@ -441,7 +496,11 @@ const TOOLS=[
 ];
 const PALETTE=["#e8442f","#f0a92e","#2fb2e8","#3fbf6a","#8b5cf6","#111111","#ffffff","#ff2d95"];
 const DEFSTYLE={stroke:"#e8442f",fill:"#e8442f",filled:false,fillOpacity:0.35,width:2,opacity:1,
-  fontSize:12,cloudR:9,dash:0,arrowEnd:true,arrowStart:false,arrowSize:14,rotation:0};
+  fontSize:12,cloudR:9,dash:0,arrowEnd:true,arrowStart:false,arrowSize:14,rotation:0,
+  font:"sans",bold:false,italic:false,underline:false,strike:false,align:"left",baseline:"normal"};
+/* style keys the format painter carries from one markup to another */
+const FMTKEYS=["stroke","fill","filled","fillOpacity","width","opacity","fontSize","cloudR","dash",
+  "arrowEnd","arrowStart","arrowSize","font","bold","italic","underline","strike","align","baseline"];
 
 function newAnn(page,type,pts,style,author,extra){
   return Object.assign({id:uid(), page, type, pts, style:Object.assign({},DEFSTYLE,style),
@@ -451,9 +510,12 @@ function newAnn(page,type,pts,style,author,extra){
 
 const _mcv=(typeof document!=="undefined")?document.createElement("canvas"):null;
 const _mctx=_mcv?_mcv.getContext("2d"):null;
-function measureTextW(str,size){
+function measureTextW(str,size,st){
   if(!str) return 0;
-  if(_mctx){ _mctx.font=size+"px Helvetica, Arial, sans-serif"; return _mctx.measureText(str).width; }
+  if(_mctx){
+    const b=(st&&st.bold)?"bold ":"", i=(st&&st.italic)?"italic ":"";
+    _mctx.font=i+b+size+"px "+fontCssOf(st); return _mctx.measureText(str).width;
+  }
   return str.length*size*0.5;
 }
 function caretFromX(str,size,relX){
@@ -465,6 +527,18 @@ function caretFromX(str,size,relX){
   return str.length;
 }
 
+/* One place that turns a text box + its style into a laid-out text run:
+   alignment, super/subscript and the font flags all resolve here so the screen
+   and the exported PDF cannot drift apart. */
+function mkText(st,raw,x0,x1,yTop,wrapW){
+  const sup=st.baseline==="super", sub=st.baseline==="sub";
+  const size=(sup||sub)? st.fontSize*0.72 : st.fontSize;
+  const y=yTop + (sup? -st.fontSize*0.30 : sub? st.fontSize*0.18 : 0);
+  const al=st.align||"left";
+  const x = al==="center" ? (x0+x1)/2 : al==="right" ? x1-4 : x0+4;
+  return {x,y,size,color:st.stroke,align:al,lines:wrapLines(raw,size,wrapW),
+    font:st.font,bold:st.bold,italic:st.italic,underline:st.underline,strike:st.strike};
+}
 function geom(a){
   const st=Object.assign({},DEFSTYLE,a.style), out={strokes:[],fills:[],arrows:[],texts:[]};
   const P=a.pts, sc=a.scale||DEFSCALE;
@@ -500,7 +574,7 @@ function geom(a){
       const [x0,y0,x1,y1]=bbox(P); const w=x1-x0;
       if(st.filled) out.fills.push({pts:[[x0,y0],[x1,y0],[x1,y1],[x0,y1]],color:st.fill,op:st.fillOpacity});
       if(st.width>0) out.strokes.push({pts:[[x0,y0],[x1,y0],[x1,y1],[x0,y1]],closed:true});
-      out.texts.push({x:x0+4,y:y0+4+st.fontSize*0.85,size:st.fontSize,color:st.stroke,lines:wrapLines(a.text,st.fontSize,Math.max(8,w-8))});
+      out.texts.push(mkText(st,a.text,x0,x1,y0+4+st.fontSize*0.85,Math.max(8,w-8)));
       break; }
     case "callout": {
       const tip=P[0], b0=P[1], b1=P[2]; const [x0,y0,x1,y1]=bbox([b0,b1]); const cx=(x0+x1)/2, cy=(y0+y1)/2;
@@ -508,9 +582,9 @@ function geom(a){
       const knee=[(tip[0]+anchor[0])/2, anchor[1]];
       out.strokes.push({pts:[tip,knee,anchor],closed:false});
       if(st.arrowEnd) out.arrows.push(arrowHead(knee,tip,AH));
-      out.fills.push({pts:[[x0,y0],[x1,y0],[x1,y1],[x0,y1]],color:st.filled?st.fill:"#ffffff",op:st.filled?st.fillOpacity:0.9});
+      if(st.filled) out.fills.push({pts:[[x0,y0],[x1,y0],[x1,y1],[x0,y1]],color:st.fill,op:st.fillOpacity});
       out.strokes.push({pts:[[x0,y0],[x1,y0],[x1,y1],[x0,y1]],closed:true});
-      out.texts.push({x:x0+4,y:y0+4+st.fontSize*0.85,size:st.fontSize,color:st.stroke,lines:wrapLines(a.text,st.fontSize,Math.max(8,x1-x0-8))});
+      out.texts.push(mkText(st,a.text,x0,x1,y0+4+st.fontSize*0.85,Math.max(8,x1-x0-8)));
       break; }
     case "mdist": {
       out.strokes.push({pts:P,closed:false});
@@ -558,20 +632,27 @@ function geom(a){
     case "ptext": {
       const [x0,y0,x1,y1]=bbox(P);
       const line=(a.text||"").split("\n")[0];
-      const xE=Math.max(x1, x0+measureTextW(line,st.fontSize));
+      const xE=Math.max(x1, x0+measureTextW(line,st.fontSize,st));
       out.fills.push({pts:[[x0-1.5,y0-1.5],[xE+2.5,y0-1.5],[xE+2.5,y1+2],[x0-1.5,y1+2]],
         color:st.fill,op:st.fillOpacity});
       if(st.width>0) out.strokes.push({pts:[[x0,y0],[xE,y0],[xE,y1],[x0,y1]],closed:true});
-      out.texts.push({x:x0,y:y1,size:st.fontSize,color:st.stroke,lines:[line]});
+      out.texts.push({x:x0,y:y1,size:st.fontSize,color:st.stroke,lines:[line],
+        font:st.font,bold:st.bold,italic:st.italic,underline:st.underline,strike:st.strike});
       break; }
   }
+  /* Every text run inherits the markup's font flags unless it set its own. */
+  out.texts.forEach(t=>{ if(t.font===undefined){ t.font=st.font; t.bold=st.bold; t.italic=st.italic; } });
+  /* Rotation. Outlines and fills are rotated point-by-point, but text keeps its
+     upright anchor and carries the angle + true centre instead — the renderer
+     and the PDF writer both spin the glyphs about that centre, so the letters
+     actually turn with the box rather than sliding around it. */
   const rotA=(st.rotation||0)*Math.PI/180;
   if(rotA){
     const c=bbCenter(P), R=q=>rotPt(q,c[0],c[1],rotA);
     out.strokes.forEach(s2=>{ s2.pts=s2.pts.map(R); });
     out.fills.forEach(f=>{ f.pts=f.pts.map(R); });
     out.arrows=out.arrows.map(t=>t.map(R));
-    out.texts.forEach(t=>{ const q=R([t.x,t.y]); t.x=q[0]; t.y=q[1]; });
+    out.texts.forEach(t=>{ t.rot={a:st.rotation||0, cx:c[0], cy:c[1]}; });
   }
   return out;
 }
@@ -582,6 +663,8 @@ function pdfPath(pts,rot,Wu,Hu,close){ const q=pts.map(p=>{ const t=toPdf(p,rot,
   return "M "+q.join(" L ")+(close?" Z":""); }
 
 function ToolIcon({name}){ return <svg viewBox="0 0 24 24" dangerouslySetInnerHTML={{__html: ICON[name]}}></svg>; }
+/* The little key chip that appears on a button while Alt is held down. */
+function KB({k,on}){ return (on && k) ? <span className="kbadge">{k}</span> : null; }
 
 /* Right-click menu. Closes on any outside pointer press, Escape, scroll or
    window resize, and clamps itself inside the viewport. */
@@ -655,6 +738,10 @@ function App(){
   const hadSelRef=useRef(0);
 
   const fileInputRef=useRef(null), layerInputRef=useRef(null), bytesRef=useRef(null), dragRef=useRef(null), finishRef=useRef(null);
+  const viewerRef=useRef(null);
+  const fmtRef=useRef(null);                    /* the look the format painter is holding */
+  const [fmtArmed,setFmtArmed]=useState(false);
+  const [altHint,setAltHint]=useState(false);   /* Alt held \u2192 flash every shortcut */
   const curScale = scales[current] || DEFSCALE;
   const selAnns = ann.filter(a=>selIds.includes(a.id));
   const one = selAnns.length===1 ? selAnns[0] : null;
@@ -738,7 +825,13 @@ function App(){
 
   function chooseTool(t){
     commitChange();
+    const carry = (t==="format" && selIds.length===1) ? selIds[0] : null;
     setTool(t); setDraft(null); setEditing(null); if(t!=="select") setSelIds([]);
+    if(t==="format"){
+      if(carry) grabFormat(carry);
+      else if(fmtRef.current) toastMsg("Format painter loaded \u2014 click markups to paint, Esc to empty it");
+      else toastMsg("Click a markup to pick up its look, then click others to paint it on");
+    }
     if(t==="textedit") toastMsg(textItems.length
       ? textItems.length+" editable lines \u2014 click one (or just double-click text with Select)"
       : "No editable text layer on this page");
@@ -756,11 +849,18 @@ function App(){
         const vp=pm.pageObj.getViewport({scale:1});
         const tc=await pm.pageObj.getTextContent();
         const U=PDFJS.Util;
+        const styles=tc.styles||{};
         const raw=tc.items.filter(it=>it.str && it.str.trim()).map(it=>{
           const m=U.transform(vp.transform,it.transform);
           const h=Math.hypot(m[2],m[3])||Math.abs(m[3])||10;
-          const w=it.width || measureTextW(it.str,h);
-          return {str:it.str, x:m[4], y:m[5], w, h};
+          /* Whatever PDF.js can tell us about the original typeface, so the
+             replacement text comes back in the same family rather than
+             defaulting to Helvetica every time. */
+          const sty=styles[it.fontName]||{};
+          const nm=(sty.fontFamily||"")+" "+(it.fontName||"");
+          const w=it.width || measureTextW(it.str,h,{font:guessFamily(nm)});
+          return {str:it.str, x:m[4], y:m[5], w, h,
+                  font:guessFamily(nm), bold:guessBold(nm), italic:guessItalic(nm)};
         });
         raw.sort((a,b)=> (a.y-b.y) || (a.x-b.x));
         const lines=[];
@@ -779,7 +879,8 @@ function App(){
               return;
             }
           }
-          lines.push({str:it.str, x:it.x, y:it.y, w:it.w, h:it.h, runs:[it]});
+          lines.push({str:it.str, x:it.x, y:it.y, w:it.w, h:it.h, runs:[it],
+                      font:it.font, bold:it.bold, italic:it.italic});
         });
         if(!dead) setTextItems(lines);
       }catch(err){ if(!dead) setTextItems([]); }
@@ -857,6 +958,40 @@ function App(){
       const c=JSON.parse(JSON.stringify(a)); c.id=uid(); c.pts=c.pts.map(p=>[p[0]+14,p[1]+14]); return c; });
     setAnn(prev=>[...prev,...copies]); setSelIds(copies.map(c=>c.id));
   }
+  /* ---------- format painter ----------
+     Pick the look up off one markup, then drop it onto as many as you like.
+     Only appearance travels: position, text and geometry are never touched. */
+  function grabFormat(id){
+    const a=ann.find(x=>x.id===id); if(!a) return false;
+    const src=Object.assign({},DEFSTYLE,a.style), out={};
+    FMTKEYS.forEach(k=>{ out[k]=src[k]; });
+    fmtRef.current=out; setFmtArmed(true);
+    toastMsg("Format picked up from "+(LABEL[a.type]||"markup")+" \u2014 now click the markups to paint");
+    return true;
+  }
+  function applyFormat(ids){
+    if(!fmtRef.current || !ids.length) return;
+    pushHistory(ann,scales);
+    setAnn(prev=>prev.map(a=> ids.includes(a.id) ? {...a,style:Object.assign({},a.style,fmtRef.current)} : a));
+    toastMsg("Format painted onto "+ids.length+" markup"+(ids.length===1?"":"s"));
+  }
+  function copyFormat(){
+    if(selIds.length!==1){ toastMsg("Select exactly one markup to copy its format"); return; }
+    grabFormat(selIds[0]);
+  }
+  function pasteFormat(){
+    if(!fmtRef.current){ toastMsg("Nothing copied yet \u2014 Ctrl+Shift+C first"); return; }
+    if(!selIds.length){ toastMsg("Select the markups to paint"); return; }
+    applyFormat(selIds);
+  }
+  function clearFormat(){ fmtRef.current=null; setFmtArmed(false); toastMsg("Format painter emptied"); }
+  /* Clicking a markup with the painter active: the first click fills the brush,
+     every click after that paints. */
+  function onFormatClick(id){
+    if(!fmtRef.current){ grabFormat(id); return; }
+    applyFormat([id]);
+  }
+
   function openCtx(clientX,clientY,hasSel){ setCtx({x:clientX,y:clientY,hasSel:!!hasSel}); }
 
   /* Selecting something pulls the Properties tab forward, the way a docked
@@ -917,6 +1052,43 @@ function App(){
   /* leaving the inline editor settles the undo step immediately */
   function setEditingCommit(v){ if(v===null) commitChange(); setEditing(v); }
 
+  /* Mouse wheel zooms about the pointer, so whatever is under the cursor stays
+     under the cursor. Shift+wheel falls back to plain scrolling. The listener is
+     attached natively because React registers wheel handlers passively, which
+     would make preventDefault silently do nothing. */
+  useEffect(()=>{
+    const el=viewerRef.current; if(!el) return;
+    function onWheel(e){
+      if(e.shiftKey) return;
+      e.preventDefault();
+      const r=el.getBoundingClientRect();
+      const px=e.clientX-r.left, py=e.clientY-r.top;
+      const cx=px+el.scrollLeft, cy=py+el.scrollTop;
+      const step=e.deltaY<0 ? 1.12 : 1/1.12;
+      setZoom(z=>{
+        const nz=Math.max(0.1,Math.min(8,z*step));
+        if(Math.abs(nz-z)<1e-6) return z;
+        const k=nz/z;
+        requestAnimationFrame(()=>{ el.scrollLeft=cx*k-px; el.scrollTop=cy*k-py; });
+        return nz;
+      });
+    }
+    el.addEventListener("wheel",onWheel,{passive:false});
+    return ()=>el.removeEventListener("wheel",onWheel);
+  },[]);
+
+  /* Hold Alt and every button shows the key that fires it. */
+  useEffect(()=>{
+    function down(e){ if(e.key==="Alt"){ e.preventDefault(); setAltHint(true); } }
+    function up(e){ if(e.key==="Alt") setAltHint(false); }
+    function off(){ setAltHint(false); }
+    window.addEventListener("keydown",down);
+    window.addEventListener("keyup",up);
+    window.addEventListener("blur",off);
+    return ()=>{ window.removeEventListener("keydown",down);
+      window.removeEventListener("keyup",up); window.removeEventListener("blur",off); };
+  },[]);
+
   useEffect(()=>{
     function onKey(e){
       /* While an inline text editor is open it owns the keyboard completely:
@@ -935,6 +1107,10 @@ function App(){
         if(k==="a" && doc){ e.preventDefault(); setTool("select");
           setSelIds(ann.filter(a=>a.page===current).map(a=>a.id)); return; }
         if(k==="d" && selIds.length){ e.preventDefault(); duplicateSelection(); return; }
+        if(k==="c" && e.shiftKey){ e.preventDefault(); copyFormat(); return; }
+        if(k==="v" && e.shiftKey){ e.preventDefault(); pasteFormat(); return; }
+        if(k==="o"){ e.preventDefault(); fileInputRef.current.click(); return; }
+        if(k==="s" && doc){ e.preventDefault(); saveAsPdf(); return; }
         if(k==="c" && selIds.length){ e.preventDefault(); copySelection(); return; }
         if(k==="x" && selIds.length){ e.preventDefault(); cutSelection(); return; }
         if(k==="v"){ e.preventDefault(); pasteClipboard(); return; }
@@ -949,6 +1125,7 @@ function App(){
 
       /* Escape unwinds one layer at a time rather than throwing everything away */
       if(e.key==="Escape"){
+        if(tool==="format" && fmtRef.current){ clearFormat(); return; }
         if(draft){ setDraft(null); return; }
         if(selIds.length){ setSelIds([]); return; }
         if(tool!=="select") chooseTool("select");
@@ -979,7 +1156,23 @@ function App(){
     setSaving(true);
     try{
       const pdf=await PDFDocument.load(bytesRef.current,{ignoreEncryption:true});
-      const font=await pdf.embedFont(StandardFonts.Helvetica);
+      /* Fonts are embedded on demand and cached, so a sheet that only uses
+         Helvetica never carries Times or Courier along for the ride. */
+      const FMAP={
+        sans: {"":"Helvetica","B":"HelveticaBold","I":"HelveticaOblique","BI":"HelveticaBoldOblique"},
+        serif:{"":"TimesRoman","B":"TimesRomanBold","I":"TimesRomanItalic","BI":"TimesRomanBoldItalic"},
+        mono: {"":"Courier","B":"CourierBold","I":"CourierOblique","BI":"CourierBoldOblique"}
+      };
+      const fontCache={};
+      async function fontFor(t){
+        const fam=(t&&t.font)||"sans", sfx=((t&&t.bold)?"B":"")+((t&&t.italic)?"I":"");
+        const key=fam+"|"+sfx;
+        if(!fontCache[key]){
+          const nm=(FMAP[fam]||FMAP.sans)[sfx]||"Helvetica";
+          fontCache[key]=await pdf.embedFont(StandardFonts[nm]||StandardFonts.Helvetica);
+        }
+        return fontCache[key];
+      }
       const pages=pdf.getPages();
       for(const a of ann){
         const pg=pages[a.page-1]; if(!pg) continue;
@@ -992,21 +1185,41 @@ function App(){
           pg.drawSvgPath(pdfPath(s.pts,rot,Wu,Hu,s.closed),{x:0,y:0,scale:1,borderColor:col,borderWidth:st.width,
             borderOpacity:st.opacity,borderLineCap:1,borderDashArray: st.dash?[st.dash*3,st.dash*2]:undefined}); });
         G.arrows.forEach(t=> pg.drawSvgPath(pdfPath(t,rot,Wu,Hu,true),{x:0,y:0,scale:1,color:col,opacity:st.opacity,borderWidth:0}));
-        G.texts.forEach(t=>{
+        for(const t of G.texts){
+          const tf=await fontFor(t);
+          const rA=t.rot? t.rot.a : 0, rad=rA*Math.PI/180;
+          const place=q=> t.rot ? rotPt(q,t.rot.cx,t.rot.cy,rad) : q;
           if(t.badge){
-            const w=Math.max(...t.lines.map(l=>font.widthOfTextAtSize(l,t.size)))+8, h=t.lines.length*t.size*1.2+5;
+            const w=Math.max(...t.lines.map(l=>tf.widthOfTextAtSize(l,t.size)))+8, h=t.lines.length*t.size*1.2+5;
             const x0=t.x-(t.center?w/2:0), y0=t.y-(t.center?h/2:0);
-            pg.drawSvgPath(pdfPath([[x0,y0],[x0+w,y0],[x0+w,y0+h],[x0,y0+h]],rot,Wu,Hu,true),
+            pg.drawSvgPath(pdfPath([[x0,y0],[x0+w,y0],[x0+w,y0+h],[x0,y0+h]].map(place),rot,Wu,Hu,true),
               {x:0,y:0,scale:1,color:rgb(1,1,1),opacity:0.86,borderColor:col,borderWidth:0.5,borderOpacity:0.5});
           }
+          const tcol=rgb(...hex2rgb(t.color));
           t.lines.forEach((ln,i)=>{
             if(!ln) return;
             const y=t.badge&&t.center ? t.y-(t.lines.length*t.size*1.2)/2+t.size*0.95+i*t.size*1.2 : t.y+i*t.size*1.2;
-            const w=font.widthOfTextAtSize(ln,t.size); const x=t.center? t.x-w/2 : t.x;
-            const P=toPdf([x,y],rot,Wu,Hu);
-            pg.drawText(ln,{x:P[0],y:P[1],size:t.size,font,color:rgb(...hex2rgb(t.color)),opacity:st.opacity,rotate:degrees(rot)});
+            const w=tf.widthOfTextAtSize(ln,t.size);
+            const mid = t.center || t.align==="center", right = !t.center && t.align==="right";
+            const x = mid ? t.x-w/2 : right ? t.x-w : t.x;
+            const D=toPdf(place([x,y]),rot,Wu,Hu);
+            pg.drawText(ln,{x:D[0],y:D[1],size:t.size,font:tf,color:tcol,opacity:st.opacity,rotate:degrees(rot-rA)});
+            /* underline / strike-through are drawn as hairline bars so they
+               rotate and export exactly like the glyphs above them */
+            if(t.underline||t.strike){
+              const bar=(off)=>{
+                const th=Math.max(0.5,t.size*0.06);
+                const q1=place([x,y+off]), q2=place([x+w,y+off]);
+                const dx=q2[0]-q1[0], dy=q2[1]-q1[1], L=Math.hypot(dx,dy)||1;
+                const ux=-dy/L*th/2, uy=dx/L*th/2;
+                pg.drawSvgPath(pdfPath([[q1[0]-ux,q1[1]-uy],[q2[0]-ux,q2[1]-uy],[q2[0]+ux,q2[1]+uy],[q1[0]+ux,q1[1]+uy]],rot,Wu,Hu,true),
+                  {x:0,y:0,scale:1,color:tcol,opacity:st.opacity,borderWidth:0});
+              };
+              if(t.underline) bar(t.size*0.17);
+              if(t.strike)    bar(-t.size*0.28);
+            }
           });
-        });
+        }
       }
       dl(new Blob([await pdf.save()],{type:"application/pdf"}), fname.replace(/\.pdf$/i,"")+"-markup.pdf");
       toastMsg("Saved "+ann.length+" markups into a new PDF");
@@ -1047,32 +1260,31 @@ function App(){
     <div className="app redline-theme">
       <div className="top">
         <div className="brand">Red<span>line</span></div>
-        <button className="tb" onClick={()=>fileInputRef.current.click()}>Open PDF</button>
-        <button className="tb primary" onClick={saveAsPdf} disabled={!doc||saving}>{saving?"Saving…":"Save PDF"}</button>
+        <button className="tb" onClick={()=>fileInputRef.current.click()}>Open PDF<KB k="^O" on={altHint}/></button>
+        <button className="tb primary" onClick={saveAsPdf} disabled={!doc||saving}>{saving?"Saving…":"Save PDF"}<KB k="^S" on={altHint}/></button>
         <div className="sep"></div>
         <button className="tb icon" title={"Undo (Ctrl+Z) \u2014 "+undoStack.length+" step"+(undoStack.length===1?"":"s")+" available"}
-          disabled={!undoStack.length} onClick={undo}>&#8630;</button>
+          disabled={!undoStack.length} onClick={undo}>&#8630;<KB k="^Z" on={altHint}/></button>
         <div className="mono" style={{minWidth:34,textAlign:"center",opacity:0.65,fontSize:11}}>{undoStack.length}/{redoStack.length}</div>
         <button className="tb icon" title={"Redo (Ctrl+Y) \u2014 "+redoStack.length+" step"+(redoStack.length===1?"":"s")+" available"}
-          disabled={!redoStack.length} onClick={redo}>&#8631;</button>
+          disabled={!redoStack.length} onClick={redo}>&#8631;<KB k="^Y" on={altHint}/></button>
         <div className="sep"></div>
-        <button className="tb icon" onClick={()=>setZoom(z=>Math.max(0.1,z/1.25))}>&minus;</button>
+        <button className="tb icon" title="Zoom out (Ctrl+\u2212, or scroll the wheel down)" onClick={()=>setZoom(z=>Math.max(0.1,z/1.25))}>&minus;<KB k="^-" on={altHint}/></button>
         <div className="mono" style={{minWidth:48,textAlign:"center"}}>{Math.round(zoom*100)}%</div>
-        <button className="tb icon" onClick={()=>setZoom(z=>Math.min(8,z*1.25))}>+</button>
-        <button className="tb" onClick={()=>setZoom(1)}>100%</button>
+        <button className="tb icon" title="Zoom in (Ctrl+=, or scroll the wheel up)" onClick={()=>setZoom(z=>Math.min(8,z*1.25))}>+<KB k="^+" on={altHint}/></button>
+        <button className="tb" onClick={()=>setZoom(1)}>100%<KB k="^0" on={altHint}/></button>
         <button className="tb icon" title="Rotate view 90°" onClick={()=>setViewRot(r=>(r+90)%360)}>&#10227;</button>
         <div className="sep"></div>
         <button className={"tb"+(grid.on?" primary":"")} title="Show grid" onClick={()=>setGrid(g=>({...g,on:!g.on}))}>Grid</button>
         <button className={"tb"+(grid.snap?" primary":"")} title="Snap to grid" onClick={()=>setGrid(g=>({...g,snap:!g.snap,on:g.snap?g.on:true}))}>Snap</button>
-        <input className="mono" type="number" min="4" max="200" step="2" title="Grid spacing (pt)"
-          style={{width:46,height:24,background:"#171b21",border:"1px solid #39424e",borderRadius:3,textAlign:"center"}}
+        <input className="mono numin" type="number" min="4" max="200" step="2" title="Grid spacing (pt)"
           value={grid.size} onChange={e=>setGrid(g=>({...g,size:Math.max(4,Math.min(400,parseInt(e.target.value)||36))}))}/>
         <button className={"tb"+(lockTool?" primary":"")}
           title={"Sticky tools \u2014 "+(lockTool?"ON: the tool stays active after each markup (Bluebeam-style)":"OFF: snaps back to Select after each markup")}
           onClick={()=>setLockTool(v=>!v)}>Sticky</button>
         <div className="sep"></div>
         <button className="tb icon" disabled={current<=1} onClick={()=>{setCurrent(c=>Math.max(1,c-1)); setSelIds([]);}}>&#8249;</button>
-        <input className="mono" style={{width:38,height:24,background:"#171b21",border:"1px solid #39424e",borderRadius:3,textAlign:"center"}}
+        <input className="mono numin" style={{width:38}}
           value={current} onChange={e=>{ const n=parseInt(e.target.value)||1; setCurrent(Math.max(1,Math.min(pageMeta.length||1,n))); setSelIds([]); }}/>
         <div className="mono">/ {pageMeta.length}</div>
         <button className="tb icon" disabled={current>=pageMeta.length} onClick={()=>{setCurrent(c=>Math.min(pageMeta.length,c+1)); setSelIds([]);}}>&#8250;</button>
@@ -1086,16 +1298,17 @@ function App(){
           <div className="tgroup" key={gi}>
             <div className="glab">{grp.g}</div>
             {grp.items.map(id=>(
-              <button key={id} className={"tool"+(tool===id?" on":"")}
+              <button key={id} className={"tool"+(tool===id?" on":"")+(id==="format"&&fmtArmed?" armed":"")}
                 title={LABEL[id]+(KEYFOR[id]?"   ("+KEYFOR[id]+")":"")} onClick={()=>chooseTool(id)}>
                 <ToolIcon name={id}/><span>{LABEL[id]}</span>
+                <KB k={KEYFOR[id]} on={altHint}/>
               </button>
             ))}
           </div>
         ))}
       </div>
 
-      <div className="viewer" onDragOver={e=>e.preventDefault()} onDrop={onDrop}>
+      <div className="viewer" ref={viewerRef} onDragOver={e=>e.preventDefault()} onDrop={onDrop}>
         {!doc ? (
           <div className="emptyv">
             <div className="big">Drop a PDF here</div>
@@ -1111,7 +1324,7 @@ function App(){
             beginChange={beginChange} commitChange={commitChange} cancelChange={cancelChange}
             dragRef={dragRef} finishRef={finishRef}
             setCoord={setCoord} editing={editing} setEditing={setEditingCommit} setText={setText}
-            onContext={openCtx}
+            onContext={openCtx} onFormatClick={onFormatClick} fmtArmed={fmtArmed}
             onCalibrateDone={(lenPt)=>setCalModal({page:current,lenPt})}
             layers={layers} activeLayer={activeLayer} grid={grid} tolerance={tolerance}
             stampText={stampText} symKey={symKey} textItems={textItems} fname={fname}
@@ -1161,13 +1374,17 @@ function App(){
         )}
       </div>
 
+      {altHint && <div className="altnote">Shortcuts \u2014 release Alt to hide</div>}
+
       <div className="status">
         <div className="mono">{doc? fname+"  ·  "+pageMeta.length+" pp" : "No document"}</div>
         <div className="mono">Tool: {LABEL[tool]}</div>
         <div className="mono">Scale: {scales[current] ? "1 pt = "+scales[current].factor.toPrecision(4)+" "+scales[current].unit : "uncalibrated"}</div>
         <div className="mono">{ann.length} markup{ann.length===1?"":"s"}{selIds.length?"  ·  "+selIds.length+" selected":""}</div>
         <div className="mono">Layer: {activeLayer}</div>
+        {fmtArmed && <div className="mono" style={{color:"var(--accent)"}}>Format painter loaded</div>}
         <div style={{flex:1}}></div>
+        <div className="mono">Wheel = zoom · Shift+wheel = scroll · Alt = shortcuts</div>
         <div className="mono">{coord}</div>
       </div>
 
@@ -1188,6 +1405,9 @@ function App(){
             {sep:1},
             {t:"Cut",            k:"Ctrl+X",     go:cutSelection},
             {t:"Copy",           k:"Ctrl+C",     go:()=>copySelection()},
+            {sep:1},
+            {t:"Copy formatting",  k:"Ctrl+Shift+C", off:selIds.length!==1, go:copyFormat},
+            {t:"Paste formatting", k:"Ctrl+Shift+V", off:!fmtRef.current,   go:pasteFormat},
             {t:"Duplicate",      k:"Ctrl+D",     go:duplicateSelection},
             {t:"Delete",         k:"Del",        go:deleteSelection},
             {sep:1},
@@ -1203,6 +1423,9 @@ function App(){
             {t:"Select all on page", k:"Ctrl+A", off:!doc,
               go:()=>{ setTool("select"); setSelIds(ann.filter(a=>a.page===current).map(a=>a.id)); }},
             {sep:1},
+            {sep:1},
+            {t:"Zoom to 100%",   k:"Ctrl+0",     go:()=>setZoom(1)},
+            {t:"Format painter", k:"F",          off:tool==="format", go:()=>chooseTool("format")},
             {t:"Back to Select tool", k:"V",     off:tool==="select", go:()=>chooseTool("select")}
           ]}/>
       )}
@@ -1240,13 +1463,17 @@ function TextEditor({a,box,caretAt,onChange,onCommit,onCancel}){
     },0);
     return ()=>clearTimeout(t);
   },[a.id]);
-  const fs=(a.style&&a.style.fontSize)||12;
+  const stl=Object.assign({},DEFSTYLE,a.style);
+  const fs=stl.fontSize||12;
   const w=Math.max(60,(box[2]-box[0])+Math.max(40,fs*4));
   const h=Math.max(fs*1.55,(box[3]-box[1])+5);
   return (
     <foreignObject x={box[0]-2} y={box[1]-2.5} width={w} height={h}>
-      <textarea ref={ref} className="editbox" defaultValue={a.text} spellCheck={false}
-        style={{fontSize:fs+"px",color:(a.style&&a.style.stroke)||"#111111"}}
+      <textarea ref={ref} className={"editbox"+(a.type==="ptext"?" cover":"")} defaultValue={a.text} spellCheck={false}
+        style={{fontSize:fs+"px",color:stl.stroke||"#111111",fontFamily:fontCssOf(stl),
+          fontWeight:stl.bold?"bold":"normal", fontStyle:stl.italic?"italic":"normal",
+          textAlign:stl.align||"left",
+          textDecoration:[stl.underline?"underline":"",stl.strike?"line-through":""].join(" ").trim()||"none"}}
         onChange={e=>onChange(a.id,e.target.value)}
         onBlur={()=>onCommit()}
         onPointerDown={e=>e.stopPropagation()}
@@ -1262,7 +1489,7 @@ function TextEditor({a,box,caretAt,onChange,onCommit,onCancel}){
 
 function PageView({meta,pageNum,zoom,viewRot,tool,ann,setAnn,scale,selIds,setSelIds,draft,setDraft,style,author,
                    addAnnotation,beginChange,commitChange,cancelChange,dragRef,finishRef,setCoord,
-                   editing,setEditing,setText,onCalibrateDone,onContext,
+                   editing,setEditing,setText,onCalibrateDone,onContext,onFormatClick,fmtArmed,
                    layers,activeLayer,grid,tolerance,stampText,symKey,textItems,fname}){
   const canvasRef=useRef(null), svgRef=useRef(null), gRootRef=useRef(null);
   const [marquee,setMarquee]=useState(null);
@@ -1427,7 +1654,8 @@ function PageView({meta,pageNum,zoom,viewRot,tool,ann,setAnn,scale,selIds,setSel
     setHoverT(-1);
     addAnnotation(newAnn(pageNum,"ptext",pts,
       {stroke:"#111111",fill:"#ffffff",filled:true,fillOpacity:1,width:0,
-       fontSize:size,opacity:1},author,
+       fontSize:size,opacity:1,
+       font:it.font||"sans", bold:!!it.bold, italic:!!it.italic},author,
       {layer:activeLayer,subject:"Edited text",text:it.str}));
   }
 
@@ -1446,6 +1674,12 @@ function PageView({meta,pageNum,zoom,viewRot,tool,ann,setAnn,scale,selIds,setSel
     if(editing) return;
     const p=toBase(e);
 
+    if(tool==="format"){
+      const g=e.target.closest("[data-id]");
+      if(g) onFormatClick && onFormatClick(g.dataset.id);
+      else toastMsg(fmtArmed? "Click a markup to paint it" : "Click a markup to pick up its look");
+      return;
+    }
     if(tool==="bucket"){ doBucket(e); return; }
     if(tool==="textedit"){
       const i=hitText(p);
@@ -1637,7 +1871,7 @@ function PageView({meta,pageNum,zoom,viewRot,tool,ann,setAnn,scale,selIds,setSel
 
   return (
     <div className="pagewrap">
-      <div className={"page "+(tool==="select"?(hoverT>=0&&!editing?"cursor-text":"cursor-select"):tool==="bucket"?"cursor-bucket":tool==="textedit"?"cursor-text":"cursor-draw")} style={{width:dispW*zoom,height:dispH*zoom}}>
+      <div className={"page "+(tool==="select"?(hoverT>=0&&!editing?"cursor-text":"cursor-select"):tool==="format"?"cursor-format":tool==="bucket"?"cursor-bucket":tool==="textedit"?"cursor-text":"cursor-draw")} style={{width:dispW*zoom,height:dispH*zoom}}>
         <canvas ref={canvasRef} style={{width:"100%",height:"100%"}}/>
         <svg ref={svgRef} className="ovl" viewBox={`0 0 ${dispW} ${dispH}`}
           onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onDoubleClick={onDbl}
@@ -1653,7 +1887,7 @@ function PageView({meta,pageNum,zoom,viewRot,tool,ann,setAnn,scale,selIds,setSel
             <g pointerEvents="none">
               {lockedAnns.map(a=> <AnnSvg key={a.id} a={{...a,scale}} hideText={a.id===editing}/>)}
             </g>
-            <g pointerEvents={tool==="select"&&!editing?"auto":"none"}>
+            <g pointerEvents={(tool==="select"||tool==="format")&&!editing?"auto":"none"}>
               {liveAnns.map(a=> <AnnSvg key={a.id} a={{...a,scale}} hideText={a.id===editing}/>)}
             </g>
             {tool==="textedit" && (
@@ -1687,7 +1921,7 @@ function PageView({meta,pageNum,zoom,viewRot,tool,ann,setAnn,scale,selIds,setSel
               {marquee && (
                 <rect data-marq="1" x={Math.min(marquee.x0,marquee.x1)} y={Math.min(marquee.y0,marquee.y1)}
                   width={Math.abs(marquee.x1-marquee.x0)} height={Math.abs(marquee.y1-marquee.y0)}
-                  fill="#f0a92e" fillOpacity={marquee.cross?0.09:0.14} stroke="#f0a92e" strokeWidth={1/zoom}
+                  fill="#A8462A" fillOpacity={marquee.cross?0.08:0.13} stroke="#A8462A" strokeWidth={1/zoom}
                   strokeDasharray={marquee.cross?(4/zoom)+" "+(3/zoom):undefined}/>
               )}
             </g>
@@ -1724,14 +1958,18 @@ function AnnSvg({a,opacity,hideText}){
       {G.arrows.map((t,i)=><path key={"a"+i} d={ptsToD(t,true)} fill={st.stroke} fillOpacity={st.opacity} stroke="none"/>)}
       {!hideText && G.texts.map((t,i)=>{
         const w=Math.max(...t.lines.map(l=>l.length))*t.size*0.55+8, h=t.lines.length*t.size*1.2+5;
+        const deco=[t.underline?"underline":null, t.strike?"line-through":null].filter(Boolean).join(" ");
+        const anchor = t.center ? "middle" : t.align==="center" ? "middle" : t.align==="right" ? "end" : "start";
         return (
-          <g key={"t"+i}>
+          <g key={"t"+i} transform={t.rot ? "rotate("+t.rot.a+" "+t.rot.cx+" "+t.rot.cy+")" : undefined}>
             {t.badge && <rect x={t.x-(t.center?w/2:0)} y={t.y-(t.center?h/2:0)} width={w} height={h} rx="2"
               fill="#ffffff" fillOpacity="0.86" stroke={st.stroke} strokeWidth="0.5" strokeOpacity="0.5"/>}
             {t.lines.map((ln,li)=>{
               const y=t.badge&&t.center ? t.y-(t.lines.length*t.size*1.2)/2+t.size*0.95+li*t.size*1.2 : t.y+li*t.size*1.2;
-              return <text key={li} x={t.x} y={y} fontFamily="Helvetica, Arial, sans-serif" fontSize={t.size}
-                fill={t.color} fillOpacity={st.opacity} textAnchor={t.center?"middle":"start"} style={{pointerEvents:"none"}}>{ln}</text>;
+              return <text key={li} x={t.x} y={y} fontFamily={FONTCSS[t.font||"sans"]} fontSize={t.size}
+                fontWeight={t.bold?"bold":undefined} fontStyle={t.italic?"italic":undefined}
+                textDecoration={deco||undefined}
+                fill={t.color} fillOpacity={st.opacity} textAnchor={anchor} style={{pointerEvents:"none"}}>{ln}</text>;
             })}
           </g>
         );
@@ -1750,7 +1988,7 @@ function Handles({a,zoom}){
     <g>
       {pts.map((p,i)=>(
         <rect key={i} data-h={i} data-kind={kind} x={p[0]-r} y={p[1]-r} width={r*2} height={r*2}
-          fill="#f0a92e" stroke="#14171c" strokeWidth={1/zoom} style={{cursor:"pointer"}}/>
+          fill="#A8462A" stroke="#FFFFFF" strokeWidth={1.4/zoom} style={{cursor:"pointer"}}/>
       ))}
     </g>
   );
@@ -1762,7 +2000,7 @@ function KeysPane(){
       {SHORTCUTS.map((r,i)=>(
         <div className="sec" key={i} style={r[0]?{}:{borderBottom:"none",paddingTop:0,paddingBottom:4}}>
           {r[0] && <h4>{r[0]}</h4>}
-          <div className="hint" style={{fontFamily:"var(--mono)",fontSize:10.5,lineHeight:1.8,color:"#8b95a5"}}>{r[1]}</div>
+          <div className="hint" style={{fontFamily:"var(--mono)",fontSize:10.5,lineHeight:1.8,color:"var(--muted)"}}>{r[1]}</div>
         </div>
       ))}
       <div className="sec"><div className="hint">Shortcuts are ignored while you are typing in a field or editing text on the page, so Ctrl+Z still undoes your typing there rather than the drawing.</div></div>
@@ -1841,6 +2079,49 @@ function PropsPane({selAnns,one,tool,style,setStyle,lockTool,setLockTool,applySt
           <div className="row"><label>Arrow size</label><input type="range" min="4" max="60" step="1" value={st.arrowSize} onChange={e=>applyStyle("arrowSize",+e.target.value)}/><div className="val">{st.arrowSize}</div></div>
         </>}
         {caps.font && <div className="row"><label>Text size</label><input type="range" min="6" max="72" step="1" value={st.fontSize} onChange={e=>applyStyle("fontSize",+e.target.value)}/><div className="val">{mv("fontSize",st.fontSize)}</div></div>}
+        {caps.font && <>
+          <div className="row"><label>Font</label>
+            <select value={st.font||"sans"} style={{fontFamily:FONTCSS[st.font||"sans"]}}
+              onChange={e=>applyStyle("font",e.target.value)}>
+              {FONTS.map(f=><option key={f.k} value={f.k} style={{fontFamily:f.css}}>{f.name}</option>)}
+            </select>
+          </div>
+          <div className="row"><label>Style</label>
+            <div className="seg">
+              <button className={"segb"+(st.bold?" on":"")} title="Bold" style={{fontWeight:700}}
+                onClick={()=>applyStyle("bold",!st.bold)}>B</button>
+              <button className={"segb"+(st.italic?" on":"")} title="Italic" style={{fontStyle:"italic",fontFamily:"Georgia,serif"}}
+                onClick={()=>applyStyle("italic",!st.italic)}>I</button>
+              <button className={"segb"+(st.underline?" on":"")} title="Underline" style={{textDecoration:"underline"}}
+                onClick={()=>applyStyle("underline",!st.underline)}>U</button>
+              <button className={"segb"+(st.strike?" on":"")} title="Strike-through" style={{textDecoration:"line-through"}}
+                onClick={()=>applyStyle("strike",!st.strike)}>S</button>
+            </div>
+          </div>
+          <div className="row"><label>Align</label>
+            <div className="seg">
+              {[["left","Align left","M3 4h13M3 8h9M3 12h13M3 16h7"],
+                ["center","Centre","M3 4h13M5 8h9M3 12h13M6 16h7"],
+                ["right","Align right","M4 4h13M8 8h9M4 12h13M10 16h7"]].map(o=>(
+                <button key={o[0]} className={"segb"+((st.align||"left")===o[0]?" on":"")} title={o[1]}
+                  onClick={()=>applyStyle("align",o[0])}>
+                  <svg viewBox="0 0 20 20"><path d={o[2]}/></svg>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="row"><label>Baseline</label>
+            <div className="seg">
+              <button className={"segb"+((st.baseline||"normal")==="normal"?" on":"")} title="Normal baseline"
+                onClick={()=>applyStyle("baseline","normal")}>x</button>
+              <button className={"segb"+(st.baseline==="super"?" on":"")} title="Superscript"
+                onClick={()=>applyStyle("baseline","super")}>x&sup2;</button>
+              <button className={"segb"+(st.baseline==="sub"?" on":"")} title="Subscript"
+                onClick={()=>applyStyle("baseline","sub")}>x&#8322;</button>
+            </div>
+          </div>
+          <div className="hint">Font, weight, underline, alignment and baseline apply to the whole text box &mdash; the note is styled as one block, not letter by letter.</div>
+        </>}
         {caps.cloud && <div className="row"><label>Cloud arc</label><input type="range" min="3" max="30" step="1" value={st.cloudR} onChange={e=>applyStyle("cloudR",+e.target.value)}/><div className="val">{st.cloudR}</div></div>}
         {caps.rot && <>
           <div className="row"><label>Rotation</label>
@@ -2709,7 +2990,7 @@ function Canvas({entities,allEntities,setEntities,layerMeta,tool,selIds,setSelId
             <circle cx={measure.a[0]} cy={measure.a[1]} r={3/zoom} fill="#f0a92e"/>
             <circle cx={measure.b[0]} cy={measure.b[1]} r={3/zoom} fill="#f0a92e"/>
             <text x={(measure.a[0]+measure.b[0])/2} y={(measure.a[1]+measure.b[1])/2-4/zoom} fontSize={12/zoom}
-              fill="#f0a92e" textAnchor="middle" fontFamily="monospace">{dist(measure.a,measure.b).toFixed(2)} m / {(dist(measure.a,measure.b)*3.28084).toFixed(1)} ft</text>
+              fill="#2F6280" textAnchor="middle" fontFamily="monospace">{dist(measure.a,measure.b).toFixed(2)} m / {(dist(measure.a,measure.b)*3.28084).toFixed(1)} ft</text>
           </g>
         )}
       </g>
@@ -2866,6 +3147,7 @@ function Shell(){
     <div className="shell">
       <div className="modebar">
         <div className="modebrand">InHouse</div>
+        <div className="vertag" title="Fieldset build version">{VERSION}</div>
         <button className={"modebtn pdf"+(mode==="pdf"?" on":"")} onClick={()=>setMode("pdf")}>
           <span className="dot"></span>PDF Markup
         </button>
